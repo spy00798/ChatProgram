@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.chat.socket.database.mapper.ChatMapper">
+
+    <select id="findUser" resultType="com.chat.socket.database.dto.LoginDTO" parameterType="com.chat.socket.database.dto.LoginDTO">
+        SELECT user_id, user_name from userlogin WHERE user_id = #{userId} AND user_pwd = sha2(#{userPwd}, 256)
+    </select>
+
+</mapper>

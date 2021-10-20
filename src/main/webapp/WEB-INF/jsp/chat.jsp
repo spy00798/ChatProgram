@@ -50,7 +50,7 @@
     </script>
 </head>
 <body>
-    <div id="wrap" style="display: flex; align-items: center; justify-content: center;">
+    <div id="wrap" style="display: flex; align-items: center; justify-content: center; height: 100vh;">
         <div style="width: 1200px; height: 800px; border: 2px solid black; display: flex; flex-wrap: wrap; padding: 0;">
             <div class="textContent" style="width: 1050px; height: 700px; border-bottom: 1px solid black; overflow: auto; border-right: 1px solid black; box-sizing: border-box;"></div>
             <div class="userList" style="width: 150px;height: 700px; border-bottom: 1px solid black; box-sizing: border-box;"></div>
