@@ -13,7 +13,6 @@ import java.util.List;
 public class SocketHandler extends TextWebSocketHandler {
 
     private static List<WebSocketSession> sessionList = new ArrayList<WebSocketSession>();
-    String user_name = "Unknown";
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
 

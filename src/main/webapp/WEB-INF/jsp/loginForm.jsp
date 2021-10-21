@@ -34,11 +34,13 @@
     </form>
 </div>
 <script>
-    let data = {
-        userId : $("#userId").val(),
-        userPwd : $("#userPwd").val()
-    };
     function loginCheck() {
+
+        let data = {
+            userId : $("#userId").val(),
+            userPwd : $("#userPwd").val()
+        };
+
         console.log(data);
         $.ajax({
             url : "/login.do",
@@ -47,7 +49,7 @@
             success : function (data) {
                 console.log(data);
                 if (data == "success"){
-                    location.replace("/chat");
+                    location.replace("/chatting");
                 } else {
                     alert("로그인 실패");
                 }

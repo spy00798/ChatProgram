@@ -1,13 +1,14 @@
 package com.chat.socket.Service;
 
+import com.chat.socket.database.dto.ChatDTO;
 import com.chat.socket.database.dto.LoginDTO;
 import com.chat.socket.database.mapper.ChatMapper;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.Session;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -15,12 +16,13 @@ public class ChatService {
 
     private final ChatMapper chatMapper;
 
-    public String TestPage() {
-        return "index";
-    }
-
-    public String ChatPage() {
-        return "chat";
+    public String ChatPage(HttpServletRequest request, LoginDTO loginDTO) {
+            HttpSession session = request.getSession();
+        if (session.getAttribute("loginInfo") == null) {
+            return "redirect:/";
+        } else {
+            return "chat";
+        }
     }
 
     public String loginForm() {
@@ -47,6 +49,17 @@ public class ChatService {
 
             return "redirect:/";
         }
+    }
+
+    public List<LoginDTO> userStatus() {
+        List<LoginDTO> data = chatMapper.findStatus();
+
+        return data;
+    }
+
+    public void createLog(ChatDTO chatDTO) {
+        chatMapper.createLog(chatDTO);
+
     }
 
 }
