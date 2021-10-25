@@ -10,7 +10,7 @@ import java.util.List;
 public interface ChatMapper {
 
     LoginDTO findUser(LoginDTO loginDTO);
-    List<LoginDTO> findLog(LoginDTO loginDTO);
+    List<ChatDTO> findLog(ChatDTO chatDTO);
     List<LoginDTO> findStatus();
     void createLog(ChatDTO chatDTO);
 }

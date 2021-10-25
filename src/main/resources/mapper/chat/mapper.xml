@@ -7,12 +7,12 @@
         SELECT user_id, user_name from userlogin WHERE user_id = #{userId} AND user_pwd = sha2(#{userPwd}, 256)
     </select>
 
-    <select id="findLog" resultType="com.chat.socket.database.dto.LoginDTO" parameterType="com.chat.socket.database.dto.LoginDTO">
+    <select id="findLog" resultType="com.chat.socket.database.dto.ChatDTO" parameterType="com.chat.socket.database.dto.ChatDTO">
         SELECT * from chatlog where user_id = #{userId} AND date_format(reg_time, '%Y-%m-%d') = date_format(now(), '%Y-%m-%d')
     </select>
 
     <select id="findStatus" resultType="com.chat.socket.database.dto.LoginDTO" >
-        SELECT user_name from userlogin
+        SELECT user_id, user_name from userlogin
     </select>
 
     <insert id="createLog" parameterType="com.chat.socket.database.dto.ChatDTO" useGeneratedKeys="true" keyProperty="idx">

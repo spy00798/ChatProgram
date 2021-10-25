@@ -12,4 +12,5 @@ public class ChatDTO {
     private String userIp;
     private String chatContent;
     private String regTime;
+    private String logData;
 }
