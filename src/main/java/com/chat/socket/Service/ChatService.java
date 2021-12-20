@@ -1,15 +1,13 @@
 package com.chat.socket.Service;
 
+import com.chat.socket.Listener.SessionListener;
 import com.chat.socket.database.dto.ChatDTO;
 import com.chat.socket.database.dto.LoginDTO;
 import com.chat.socket.database.mapper.ChatMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -23,6 +21,7 @@ import java.util.List;
 public class ChatService {
 
     private final ChatMapper chatMapper;
+    private final SessionListener sessionListener;
 
     public String ChatPage(HttpServletRequest request, LoginDTO loginDTO) {
         HttpSession session = request.getSession();
@@ -33,28 +32,43 @@ public class ChatService {
         }
     }
 
-    public String loginForm() {
+    public String loginForm(HttpServletRequest request) {
+        HttpSession session = request.getSession();
+        if (session.getAttribute("loginInfo") != null) {
+            return "redirect:/chat";
+        }
         return "loginForm";
     }
 
     public String loginAction(HttpServletRequest request, LoginDTO loginDTO) {
         HttpSession session = request.getSession();
+        System.out.println("-----Login Check-----");
         System.out.println(loginDTO.getUserId());
         System.out.println(loginDTO.getUserPwd());
+        System.out.println("---------------------");
         chatMapper.findUser(loginDTO);
         LoginDTO login = chatMapper.findUser(loginDTO);
 
 
         if (chatMapper.findUser(loginDTO).getUserId() == null) {
-            session.setAttribute("loginInfo", null);
             System.out.println("---Login Failed---");
-
             return "redirect:/";
         } else {
-            session.setAttribute("loginInfo", login);
-            System.out.println("-------login Success-------");
+            boolean duplicateChk = sessionListener.DuplicateCheck(login.getUserId());
+            System.out.println("DuplicateResult : " + duplicateChk);
+            if (duplicateChk == true) {
+                return "duplicated.";
+            } else if (chatMapper.findUser(loginDTO).getUserAccess() == 0) {
+                System.out.println("This user was banned. : " + loginDTO.getUserId());
+                    return "Banned.";
+            }
+            else {
+                session.setAttribute("loginInfo", login);
+                System.out.println("-------login Success-------");
+                System.out.println(session.getId());
+                return "success";
+            }
 
-            return "success";
         }
     }
 
@@ -68,10 +82,19 @@ public class ChatService {
         return "redirect:/";
     }
 
-    public List<LoginDTO> userStatus() {
-        List<LoginDTO> data = chatMapper.findStatus();
 
-        return data;
+    public void banUser(LoginDTO loginDTO) {
+        chatMapper.userBan(loginDTO);
+    }
+
+    public void pardonUser(LoginDTO loginDTO) {
+        chatMapper.userPardon(loginDTO);
+    }
+
+    public List<LoginDTO> userStatus() {
+            List<LoginDTO> data = chatMapper.findStatus();
+
+            return data;
     }
 
     public void createLog(ChatDTO chatDTO) {
@@ -99,7 +122,6 @@ public class ChatService {
             String fileName = chatDTO.getUserId() + "_" + today + ".txt";
 
         try {
-
 
             System.out.println(fileName);
 
@@ -130,7 +152,34 @@ public class ChatService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-            return fileName;
+            return "";
+    }
+
+    public void backupLog(MultipartFile filePath, ChatDTO chatDTO) {
+
+            try {
+
+            File file = new File(filePath.getOriginalFilename());
+            file.createNewFile();
+
+            OutputStream bout = new FileOutputStream(file);
+            bout.write(filePath.getBytes());
+            String line;
+            BufferedReader br = new BufferedReader(new InputStreamReader(filePath.getInputStream(), "UTF-8"));
+            while((line = br.readLine()) != null) {
+                System.out.println(line);
+                int nameidx = line.indexOf(" : ");
+                System.out.println(nameidx);
+                chatDTO.setRegTime(line.substring(1, 20));
+                chatDTO.setChatContent(line.substring(nameidx + 3, line.length()));
+                chatMapper.createLog(chatDTO);
+            }
+
+            bout.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
     }
 
 }

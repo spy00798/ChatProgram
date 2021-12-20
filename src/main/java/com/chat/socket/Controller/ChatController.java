@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,8 +29,8 @@ public class ChatController {
     }
 
     @RequestMapping(value = "/")
-    public String loginForm() {
-        return chatService.loginForm();
+    public String loginForm(HttpServletRequest request) {
+        return chatService.loginForm(request);
     }
 
     @ResponseBody
@@ -45,7 +47,7 @@ public class ChatController {
     @ResponseBody
     @RequestMapping(value = "/listAjax")
     public List<LoginDTO> userStatus() {
-        return chatService.userStatus();
+            return chatService.userStatus();
     }
 
     @ResponseBody
@@ -61,9 +63,26 @@ public class ChatController {
         return chatService.showLog(chatDTO);
     }
 
-    @ResponseBody
     @RequestMapping(value = "/download.do")
     public void downloadLog(HttpServletResponse response, ChatDTO chatDTO) {
         chatService.downloadLog(response, chatDTO);
     }
+
+    @RequestMapping(value = "/backup.do")
+    public void backupLog(@RequestParam("file") MultipartFile filePath, ChatDTO chatDTO) {
+        chatService.backupLog(filePath, chatDTO);
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/ban.do", method = RequestMethod.POST)
+    public void banUser(LoginDTO loginDTO) {
+        chatService.banUser(loginDTO);
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/pardon.do", method = RequestMethod.POST)
+    public void pardonUser(LoginDTO loginDTO) {
+        chatService.pardonUser(loginDTO);
+    }
+
 }

@@ -50,6 +50,10 @@
                 console.log(data);
                 if (data == "success"){
                     location.replace("/chatting");
+                } else if (data == "duplicated."){
+                    alert("해당 아이디로 로그인한 세션이 이미 있습니다.");
+                } else if (data == "Banned.") {
+                    alert("차단된 아이디입니다.");
                 } else {
                     alert("로그인 실패");
                 }

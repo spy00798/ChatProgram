@@ -13,4 +13,8 @@ public interface ChatMapper {
     List<ChatDTO> findLog(ChatDTO chatDTO);
     List<LoginDTO> findStatus();
     void createLog(ChatDTO chatDTO);
+    void updateConnect(LoginDTO loginDTO);
+    void updateDisconnect(LoginDTO loginDTO);
+    void userBan(LoginDTO loginDTO);
+    void userPardon(LoginDTO loginDTO);
 }

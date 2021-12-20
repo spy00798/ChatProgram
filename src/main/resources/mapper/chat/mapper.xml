@@ -4,7 +4,7 @@
 <mapper namespace="com.chat.socket.database.mapper.ChatMapper">
 
     <select id="findUser" resultType="com.chat.socket.database.dto.LoginDTO" parameterType="com.chat.socket.database.dto.LoginDTO">
-        SELECT user_id, user_name from userlogin WHERE user_id = #{userId} AND user_pwd = sha2(#{userPwd}, 256)
+        SELECT user_id, user_name, user_access from userlogin WHERE user_id = #{userId} AND user_pwd = sha2(#{userPwd}, 256)
     </select>
 
     <select id="findLog" resultType="com.chat.socket.database.dto.ChatDTO" parameterType="com.chat.socket.database.dto.ChatDTO">
@@ -12,11 +12,26 @@
     </select>
 
     <select id="findStatus" resultType="com.chat.socket.database.dto.LoginDTO" >
-        SELECT user_id, user_name from userlogin
+        SELECT user_id, user_name, user_status, user_access from userlogin
     </select>
 
     <insert id="createLog" parameterType="com.chat.socket.database.dto.ChatDTO" useGeneratedKeys="true" keyProperty="idx">
         INSERT INTO chatlog (user_id, user_name, user_ip, chat_content, reg_time) VALUES(#{userId}, #{userName}, #{userIp}, #{chatContent}, #{regTime})
     </insert>
+
+    <update id="updateConnect" parameterType="com.chat.socket.database.dto.LoginDTO">
+        UPDATE userlogin SET user_status = '1' WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateDisconnect" parameterType="com.chat.socket.database.dto.LoginDTO">
+        UPDATE userlogin SET user_status = '0' WHERE user_id = #{userId}
+    </update>
+
+    <update id="userBan" parameterType="com.chat.socket.database.dto.LoginDTO">
+        UPDATE userlogin SET user_access = "0" WHERE user_id = #{userId}
+    </update>
+    <update id="userPardon" parameterType="com.chat.socket.database.dto.LoginDTO">
+        UPDATE userlogin SET user_access = "100" WHERE user_id = #{userId}
+    </update>
 
 </mapper>

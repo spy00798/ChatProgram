@@ -9,5 +9,6 @@ public class LoginDTO {
         private String userPwd;
         private String userName;
         private int userStatus;
+        private int userAccess;
 
 }

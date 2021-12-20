@@ -25,15 +25,28 @@
         console.log(ws)
 
         function wsEvt() {
+
             ws.onopen = function (data) {
 
             }
             ws.onmessage = function (data) {
+                console.log(data);
                 var message = data.data;
+                console.log(message);
+                console.log((message.substring((message.indexOf(": ") + 1), message.length).trim().startsWith("/say to", 0) && message.substring(0, message.indexOf(" :")) == `${sessionScope.loginInfo.userName}`));
                 if (message.trim() != null && message.trim() != '') {
-                    $(".textContent").append("<pre>" + message + "</pre>");
+                    if (message.startsWith("FROM", 0)) {
+                        $("#textContent").append("<pre style='color: green;'>" + message + "</pre>");
+                    } else if (message.startsWith("TO", 0)) {
+                        $("#textContent").append("<pre style='color: blue;'>" + message + "</pre>");
+                    } else {
+                        $("#textContent").append("<pre>" + message + "</pre>");
+                    }
+                    $("#textContent").scrollTop($("#textContent")[0].scrollHeight);
                 }
+
             }
+
 
             document.addEventListener('keypress', function (e) {
                 if (e.keyCode == 13) {
@@ -43,63 +56,58 @@
         }
 
         function send() {
-            var userName = `${sessionScope.loginInfo.userName}`
-            var message = userName + " : " + "\n" + $(".textType").val();
-            message = message.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace('\n', "<br>");
-            if ($('.textType').val().trim() == "") {
-                message = '';
+            let userName = `${sessionScope.loginInfo.userName}`
+            let textMessage = $(".textType").val();
+            textMessage = textMessage.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace('\n', "<br>");
+            if (textMessage.trim() == "") {
+                textMessage = '';
             }
+            let message = userName + " : " + textMessage;
             let logData = {
                 userId: `${sessionScope.loginInfo.userId}`,
-                userName: `${sessionScope.loginInfo.userName}`,
+                userName: userName,
                 userIp: $("#userIp").val(),
-                chatContent: $(".textType").val(),
+                chatContent: message,
                 regTime: $("#chatTime").val()
             };
             ws.send(message);
-            $.ajax({
-                url: "/logAjax",
-                type: "POST",
-                data: logData,
-                success: function (data) {
 
-                },
-                error: function () {
-
-                }
-            });
-            $(".textType").val("");
-
-
-        };
-
-        $(document).ready(function () {
-            function showUser() {
+            if (message.trim() != null && message.trim() != '') {
                 $.ajax({
-                    url: "/listAjax",
-                    type: "GET",
-                    data: null,
+                    url: "/logAjax",
+                    type: "POST",
+                    data: logData,
                     success: function (data) {
 
-                        console.log(data);
-                        for (var i = 0; i < data.length; i++) {
-                            // if (data[i].userStatus == 1) {
-                            $("#userList-online").append("<li>" + data[i].userName + "<div onclick='showLog(`" + data[i].userId + "`,`" + data[i].userName + "`);'>log</div></li>");
-                            // } else {
-                            //     $("#userList-offline").append("<li>" + data[i].userName + "</li>");
-                            // }
-                        }
                     },
                     error: function () {
-                        alert("통신실패");
+
                     }
                 });
-            };
-            setTimeout(showUser, 100);
-        });
+                $(".textType").val(null);
+
+            }
+            ;
+        };
+
+        function showUser() {
+            $.ajax({
+                url: "/listAjax",
+                type: "GET",
+                data: null,
+                success: function (data) {
+                    console.log(data);
+                    addUser(data)
+                },
+                error: function () {
+                    alert("통신실패");
+                }
+            });
+        };
 
         function showList() {
             $("#userList").stop().fadeToggle(500);
+            showUser();
         };
 
         function showLog(userId, userName) {
@@ -116,13 +124,14 @@
                 success: function (data) {
                     console.log(data);
                     $("#showLog").append("<h2>" + userName + "(" + userId + ") 님의 채팅" + "</h2>")
-                    for (var i = 0; i < data.length; i++) {
+                    for (let i = 0; i < data.length; i++) {
                         $("#showLog > ul").append("<li>[" + data[i].regTime + "]" + data[i].userName + "(" + data[i].userId + ")" + " : " + data[i].chatContent.replaceAll(/</g, "&lt;").replaceAll(/>/g, "&gt;") + "</li>");
                     }
                     if (data.length == 0) {
                         $("#showLog > ul").append("<li style='font-size: 18px; text-align: center;'>------[채팅이력이 없습니다.]------</li>");
                     }
-                    $("#showLog").append("<a href='/download.do?userId="+ userId +"' id='downloadLog' download='"+ userId +".txt' >다운로드</a>")
+                    $("#showLog").append("<a href='/download.do?userId=" + userId + "' id='downloadLog' download='" + userId + ".txt' >다운로드</a>")
+                    $("#showLog").append("<form id='fileForm' enctype='multipart/form-data'><input type='file' id='fileBack' accept='.txt' onchange='getRealPath(this)' /><input type='button' id='backup_btn' value='복원' onclick='BackupDo(`" + userName + "`,`" + userId + "`,`" + userIp + "`)'/></form>")
                 },
                 error: function () {
                     alert("통신실패");
@@ -130,9 +139,121 @@
             });
         };
 
+        function addUser(data) {
+            $("#userList-online > li > ul").empty();
+            $("#userList-offline > li > ul").empty();
+
+            for (var i = 0; i < data.length; i++) {
+                if (data[i].userStatus == "1") {
+                    if (data[i].userName != `${sessionScope.loginInfo.userName}`) {
+                        if (data[i].userAccess == "0") {
+                            $("#userList-online > li > ul").append("<li>" + data[i].userName + "<div class='btn_area' style='display: flex'><div class='log_btn' onclick='showLog(`" + data[i].userId + "`,`" + data[i].userName + "`);'>log</div><div class='whisper' style='width: 70px; height: 30px; float: left; margin: 10px; border: 1px solid black; text-align: center; line-height: 30px; cursor:pointer;' onclick='tellmsg(`" + data[i].userId + "`)' >귓속말</div><div class='kick_btn' style='width: 50px; height: 30px; margin: 10px; background: black; color: white; text-align: center; line-height: 30px; cursor: pointer;' onclick='kickUser(`" + data[i].userId + "`);' >Kick</div><div class='pardon_btn' style='width: 70px; height: 30px;margin: 10px; background: blue; color: white; text-align: center; line-height: 30px; cursor: pointer;' onclick='pardonUser(`" + data[i].userId + "`)'>PARDON</div></div></li>");
+                        } else {
+                            $("#userList-online > li > ul").append("<li>" + data[i].userName + "<div class='btn_area' style='display: flex'><div class='log_btn' onclick='showLog(`" + data[i].userId + "`,`" + data[i].userName + "`);'>log</div><div class='whisper' style='width: 70px; height: 30px; float: left; margin: 10px; border: 1px solid black; text-align: center; line-height: 30px; cursor:pointer;' onclick='tellmsg(`" + data[i].userId + "`)' >귓속말</div><div class='kick_btn' style='width: 50px; height: 30px; margin: 10px; background: black; color: white; text-align: center; line-height: 30px; cursor: pointer;' onclick='kickUser(`" + data[i].userId + "`);' >Kick</div><div class='ban_btn' style='width: 50px; height: 30px;margin: 10px; background: red; color: white; text-align: center; line-height: 30px; cursor: pointer;' onclick='banUser(`" + data[i].userId + "`)'>BAN</div></div></li>");
+                        }
+                    } else {
+                        $("#userList-online > li > ul").append("<li>" + data[i].userName + "<div class='btn_area' style='display: flex'><div class='log_btn' onclick='showLog(`" + data[i].userId + "`,`" + data[i].userName + "`);'>log</div></div></li>");
+                    }
+                } else {
+                    if (data[i].userAccess == "0") {
+                        $("#userList-offline > li > ul").append("<li>" + data[i].userName + "<div class='btn_area' style='display: flex'><div class='log_btn' onclick='showLog(`" + data[i].userId + "`,`" + data[i].userName + "`);'>log</div><div class='pardon_btn' style='width: 70px; height: 30px;margin: 10px; background: blue; color: white; text-align: center; line-height: 30px; cursor: pointer;' onclick='pardonUser(`" + data[i].userId + "`)'>PARDON</div></div></li>");
+                    } else {
+                        $("#userList-offline > li > ul").append("<li>" + data[i].userName + "<div class='btn_area' style='display: flex'><div class='log_btn' onclick='showLog(`" + data[i].userId + "`,`" + data[i].userName + "`);'>log</div><div class='ban_btn' style='width: 50px; height: 30px;margin: 10px; background: red; color: white; text-align: center; line-height: 30px; cursor: pointer;' onclick='banUser(`" + data[i].userId + "`)'>BAN</div></div></li>");
+                    }
+                }
+            }
+        }
+
+        function tellmsg(userId) {
+            $("#userList").stop().fadeOut(0);
+            $(".textType").val("/say to \"" + userId + "\" ")
+        }
+
+        function kickUser(userId) {
+
+            ws.send("/kick \"" + userId + "\"");
+            alert("추방 완료");
+
+
+        }
+
+        function banUser(userId) {
+            let param = {
+                userId: userId
+            }
+            $.ajax({
+                url: "/ban.do",
+                type: "POST",
+                data: param,
+                success: function () {
+                    alert("차단 완료");
+                    if ($('#userId').val() == userId) {
+                        location.replace('/logout.do');
+                    }
+                },
+                error: function () {
+                    alert("통신 실패");
+                }
+            })
+            ws.send("/kick \"" + userId + "\"");
+        }
+
+        function pardonUser(userId) {
+            let param = {
+                userId: userId
+            }
+            $.ajax({
+                url: "/pardon.do",
+                type: "POST",
+                data: param,
+                success: function () {
+                    alert("차단 해제 완료");
+                },
+                error: function () {
+                    alert("통신 실패");
+                }
+            })
+        };
+
         function closeLog() {
             $("#showLog").remove();
         };
+
+        function getRealPath(address) {
+            $("#showLog > ul > li").remove()
+            let fileReader = new FileReader();
+            fileReader.readAsText(address.files[0], "utf-8");
+            fileReader.onloadend = function (event) {
+                for (let i = 0; i < event.target.result.split("\n").length; i++) {
+                    $("#showLog > ul").append("<li>" + event.target.result.split("\n")[i] + "</li>")
+                }
+                console.log(event.target.result.split("\n"))
+                // showLog(event.target.result.split("\n"))
+            }
+        }
+
+        function BackupDo(userName, userId) {
+            let data = new FormData();
+            data.append("file", $("#fileBack")[0].files[0]);
+            data.append("userId", userId);
+            data.append("userName", userName);
+            data.append("userIp", $("#userIp").val());
+
+            $.ajax({
+                url: "/backup.do",
+                contentType: false,
+                processData: false,
+                type: "POST",
+                data: data,
+                success: function () {
+
+                },
+                error: function () {
+
+                }
+
+            })
+        }
 
 
     </script>
@@ -173,18 +294,52 @@
             display: none;
         }
 
-        #userList-online {
+        #userList-online, #userList-offline {
             margin: 0;
             padding: 0;
         }
 
-        #userList-online > li {
+        #userList-online > li > ul > li, #userList-offline > li > ul > li {
             width: 100%;
             height: 70px;
             border-bottom: 1px solid #666;
+            padding-top: 10px;
+            text-decoration: none;
         }
 
-        #userList-online > li > div {
+        #userList-offline > li > ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #userList-online > li > ul {
+            padding: 0;
+            list-style: none;
+        }
+
+        #userList-online > li > ul > li::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            background: lime;
+            border-radius: 50%;
+            margin: 0 10px;
+
+        }
+
+        #userList-offline > li > ul > li::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            background: gray;
+            border-radius: 50%;
+            margin: 0 10px;
+
+        }
+
+        .log_btn {
             width: 50px;
             height: 30px;
             background: orange;
@@ -195,7 +350,7 @@
             cursor: pointer;
         }
 
-        #userList-online > li > div:active {
+        .log_btn:active {
             background: orangered;
         }
 
@@ -280,28 +435,42 @@
     <input type="hidden" id="userIp" value="<%= ipAddress %>">
     <div style="width: 1000px; height: 800px; border: 2px solid black; display: flex; flex-wrap: wrap; padding: 0;">
         <div class="textHeader" style="width: 1000px; height: 50px; border-bottom: 1px solid black;">
-            <a href="logout.do" style="">나가기</a>
+            <a href="/logout.do" style="">나가기</a>
         </div>
-        <div class="textContent"
+        <div id="textContent"
              style="width: 950px; height: 700px; border-bottom: 1px solid black; overflow: auto; border-right: 1px solid black; box-sizing: border-box;"></div>
         <div style="width: 50px;height: 700px; border-bottom: 1px solid black; box-sizing: border-box;">
             <input type="button" id="showBtn" value="&middot;&middot;&middot;" onclick="showList();">
         </div>
-        <div style="width: 900px;height: 50px; box-sizing: border-box;"><input class="textType" type="text"
-                                                                               style="width:900px;height:50px;font-size:16px; border: none;"
-                                                                               placeholder="메시지 입력..."></div>
+        <div style="width: 900px;height: 50px; box-sizing: border-box;"><input type="text"
+                                                                               style="width:900px;height:50px;font-size:16px; border: none; resize: none"
+                                                                               class="textType"
+                                                                               placeholder="메시지 입력..."/></div>
         <div class="submitBtn" style="width: 100px;height: 50px; box-sizing: border-box; border-left: 1px solid black;">
             <input type="button" value="전송" onclick="send()"
                    style="width: 100px; height: 50px; border: none; outline: none; cursor: pointer; background: none">
         </div>
     </div>
     <div id="userList">
-        <div style="border-bottom: 1px solid black;">유저목록</div>
-        <ul id="userList-online" style="list-style: none;"></ul>
-        <%--                    <ul id="userList-offline">--%>
+        <div style="border-bottom: 1px solid black; height: 30px; line-height: 30px; font-size: 18px;">유저목록</div>
+        <div style="border-bottom: 1px solid black; height: 30px; line-height: 30px; font-size: 18px;">online</div>
+        <ul id="userList-online" style="list-style: none;">
+            <li>
+                <ul>
 
-        <%--                    </ul>       --%>
+                </ul>
+            </li>
+        </ul>
+        <div style="border-bottom: 1px solid black; height: 30px; line-height: 30px; font-size: 18px;">offline</div>
+        <ul id="userList-offline" style="list-style: none;">
+            <li>
+                <ul>
+
+                </ul>
+            </li>
+        </ul>
     </div>
 </div>
 </body>
 </html>
+
